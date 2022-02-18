@@ -1,0 +1,96 @@
+---
+title: "Employment in Turkey"
+date: "2/18/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      warning = FALSE,
+                      message = FALSE)
+```
+
+```{r library}
+library(here)
+library(tidyverse)
+library(readxl)
+
+```
+
+
+```{r} 
+# data source: https://data.tuik.gov.tr/Bulten/DownloadIstatistikselTablo?p=4zachOz6zSKVyb9ASEcY5lq2Q2my55k3Y99cwwcsTn/jz5j1Fqab/FMr8oyImpLS
+# accessed: 2022-02-18
+# Temel işgücü göstergeleri (15+ yaş)
+data_emp_tuik <- read_xls(here("data/data_emp_tuik_2022_02.xls"), skip = 3) %>% 
+  select(-c(`...11`, `Yıllar - Years...12`, `...13`,
+            `...22`, `Yıllar - Years...23`, `...24`)) %>% 
+  rename(year = `Yıllar - Years...1`,
+         month = `...2`,
+         pop_15_plus = `15 ve daha yukarı yaştaki nüfus\nPopulation 15 years and over...3`, 
+         labor_force = `İşgücü\nLabour force...4`,                                          
+         employed = `İstihdam edilenler\nEmployed...5`,                                  
+         unemployed = `İşsiz\nUnemployed...6`,                                             
+         not_in_lf = `İşgücüne dahil olmayan nüfus          \nNot in labour force...7`,   
+         lf_participation = `İşgücüne katılma oranı\nLabour force participation rate\n(%)...8`,  
+         emp_rate = `İstihdam oranı     \nEmployment rate                 \n(%)...9`,    
+         unemp_rate = `İşsizlik oranı\nUnemployment rate \n(%)...10`,
+         pop_15_plus_m = `15 ve daha yukarı yaştaki nüfus\nPopulation 15 years and over...14`, 
+         labor_force_m = `İşgücü\nLabour force...15`,                                          
+         employed_m = `İstihdam edilenler\nEmployed...16`,                                  
+         unemployed_m = `İşsiz\nUnemployed...17`,                                             
+         not_in_lf_m = `İşgücüne dahil olmayan nüfus          \nNot in labour force...18`,   
+         lf_participation_m = `İşgücüne katılma oranı\nLabour force participation rate\n(%)...19`,  
+         emp_rate_m = `İstihdam oranı     \nEmployment rate                 \n(%)...20`,    
+         unemp_rate_m = `İşsizlik oranı\nUnemployment rate \n(%)...21`,
+         pop_15_plus_f = `15 ve daha yukarı yaştaki nüfus\nPopulation 15 years and over...25`, 
+         labor_force_f = `İşgücü\nLabour force...26`,                                          
+         employed_f = `İstihdam edilenler\nEmployed...27`,                                  
+         unemployed_f = `İşsiz\nUnemployed...28`,                                             
+         not_in_lf_f = `İşgücüne dahil olmayan nüfus          \nNot in labour force...29`,   
+         lf_participation_f = `İşgücüne katılma oranı\nLabour force participation rate\n(%)...30`,  
+         emp_rate_f = `İstihdam oranı     \nEmployment rate                 \n(%)...31`,    
+         unemp_rate_f = `İşsizlik oranı\nUnemployment rate \n(%)...32`) %>% 
+  fill(year) %>% 
+  filter(str_detect(year, "^20"),
+         !is.na(month)) %>% 
+  separate(month, into = c("month_tr", "month"), sep = "- ") %>% 
+  mutate(unemp_rate = as.numeric(unemp_rate),
+         unemp_rate_m = as.numeric(unemp_rate_m),
+         unemp_rate_f = as.numeric(unemp_rate_f),
+         year_month = str_c(year, "-", month)) %>% 
+  select(-month_tr)
+data_emp_tuik_2 <- data_emp_tuik %>% 
+  pivot_longer(-c(year, month, year_month),
+               names_to = "indicator",
+               values_to = "value")
+data_emp_tuik_3 <- data_emp_tuik_2 %>% 
+  group_by(indicator) %>% 
+  mutate(value_change = value - lag(value))
+```
+
+
+```{r} 
+data_emp_tuik_2 %>% 
+  filter(indicator %in% c("employed_m")) %>% 
+  ggplot(aes(x = fct_inorder(year_month), y = value, color = indicator, group = 1 )) + 
+  geom_line()
+```
+
+
+```{r} 
+data_emp_tuik_3 %>% 
+  filter(indicator %in% c("employed_m")) %>% 
+  ggplot(aes(x = fct_inorder(year_month), y = value_change, fill = month == "December")) + 
+  geom_col() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+
+```{r, fig.width=12} 
+data_emp_tuik_3 %>% 
+  ggplot(aes(x = fct_inorder(year_month), y = value_change, fill = month == "June")) + 
+  geom_col() +
+  facet_wrap(~ indicator, scales = "free") +
+  theme(axis.text.x = element_blank())
+```
