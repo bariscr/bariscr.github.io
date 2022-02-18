@@ -1,3 +1,7 @@
-rmarkdown::render(here("rmd/emp-tr.Rmd"), 
-                  output_file = here("docs/emp-tr.html"))
-                  
+library(here)
+list.files("rmd")
+
+rmarkdown::render(here("rmd/vtree-wdi.Rmd"), 
+                  output_file = here("docs/vtree-wdi.Rmd"))
+
+
